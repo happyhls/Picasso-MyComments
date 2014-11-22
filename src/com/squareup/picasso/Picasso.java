@@ -161,6 +161,7 @@ public class Picasso {
   final Dispatcher dispatcher;
   final Cache cache;
   final Stats stats;
+  //一个Map用来保存了正在执行的Target
   final Map<Object, Action> targetToAction;
   final Map<ImageView, DeferredRequestCreator> targetToDeferredRequestCreator;
   final ReferenceQueue<Object> referenceQueue;
@@ -215,6 +216,7 @@ public class Picasso {
   }
 
   /** Cancel any existing requests for the specified target {@link ImageView}. */
+  /** 取消和目标的ImageView绑定的请求 {@link ImageView}. */
   public void cancelRequest(ImageView view) {
     cancelExistingRequest(view);
   }
@@ -440,20 +442,24 @@ public class Picasso {
     targetToDeferredRequestCreator.put(view, request);
   }
 
+  //将action添加到队列，并提交
   void enqueueAndSubmit(Action action) {
     Object target = action.getTarget();
     if (target != null && targetToAction.get(target) != action) {
       // This will also check we are on the main thread.
+      // 此处说明，比如同一个ImageView，已经更换了图片，所以要取消当前的请求，提交新的请求。（这在ListView中是进场的）
       cancelExistingRequest(target);
       targetToAction.put(target, action);
     }
     submit(action);
   }
 
+  //提交action
   void submit(Action action) {
     dispatcher.dispatchSubmit(action);
   }
 
+  //快速检测key对应的图片是否在cache当中
   Bitmap quickMemoryCacheCheck(String key) {
     Bitmap cached = cache.get(key);
     if (cached != null) {
@@ -541,13 +547,23 @@ public class Picasso {
     }
   }
 
+  /**
+   * 取消和目标的ImageView绑定的请求
+   * @param target
+   */
   private void cancelExistingRequest(Object target) {
+    //检查是否工作在主线程
     checkMain();
+    //获取target对应的Action，并从列表中删除
     Action action = targetToAction.remove(target);
+    //如果action存在，那么就执行取消操作，并调用dispatcher取消对应的action
     if (action != null) {
+      //调用action的cancel函数，实际上是设置cancel标志
       action.cancel();
+      //实际上是通过dispatcher绑定的handler发送到相应的线程上去处理。
       dispatcher.dispatchCancel(action);
     }
+    //如果target是一个ImageView的话，那么还会需要一些操作，暂时不太懂。
     if (target instanceof ImageView) {
       ImageView targetImageView = (ImageView) target;
       DeferredRequestCreator deferredRequestCreator =

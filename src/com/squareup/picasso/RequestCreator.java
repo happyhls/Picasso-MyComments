@@ -388,8 +388,12 @@ public class RequestCreator {
    * Asynchronously fulfills the request into the specified {@link Target}. In most cases, you
    * should use this when you are dealing with a custom {@link android.view.View View} or view
    * holder which should implement the {@link Target} interface.
+   * 一个异步方法：用来将request填充到指定的Target上。在大多数情况下，当我们需要处理一个自定义的View或者一个view holder的时候，
+   * 需要继承Target接口。
+   * 
    * <p>
    * Implementing on a {@link android.view.View View}:
+   * 实现一个 {@link android.view.View View}:
    * <blockquote><pre>
    * public class ProfileView extends FrameLayout implements Target {
    *   {@literal @}Override public void onBitmapLoaded(Bitmap bitmap, LoadedFrom from) {
@@ -428,6 +432,8 @@ public class RequestCreator {
    * <em>Note:</em> This method keeps a weak reference to the {@link Target} instance and will be
    * garbage collected if you do not keep a strong reference to it. To receive callbacks when an
    * image is loaded use {@link #into(android.widget.ImageView, Callback)}.
+   * 注意，该方法保持了一个对Target的weak弱引用，也就是说，如果我们其他的地方没有对这个保持引用的话，那么就会被垃圾回收。
+   * 如果需要当一个图片加载成功之后，需要接收回调的话，我们应该使用into(android.widget.ImageView, Callback)方法。
    */
   public void into(Target target) {
     long started = System.nanoTime();
@@ -440,17 +446,22 @@ public class RequestCreator {
       throw new IllegalStateException("Fit cannot be used with a Target.");
     }
 
+    //如果请求没有设置图片属性，即既没有设置uri，也没有设置resourceId的时候，会取消该request
     if (!data.hasImage()) {
       picasso.cancelRequest(target);
       target.onPrepareLoad(setPlaceholder ? getPlaceholderDrawable() : null);
       return;
     }
 
+    //创建一个请求
     Request request = createRequest(started);
     String requestKey = createKey(request);
 
+    //如果设置不要跳过MemoryCache，那么就从MemoryCache中取回数据
     if (!skipMemoryCache) {
+      //尝试从cache中获取图片
       Bitmap bitmap = picasso.quickMemoryCacheCheck(requestKey);
+      //如果cache hit，那么则取消相应的请求，并从Memory返回图片
       if (bitmap != null) {
         picasso.cancelRequest(target);
         target.onBitmapLoaded(bitmap, MEMORY);
@@ -458,11 +469,15 @@ public class RequestCreator {
       }
     }
 
+    //到此，图片没有cache hit，需要访问网络获取图片。
+    //设置默认显示的图片
     target.onPrepareLoad(setPlaceholder ? getPlaceholderDrawable() : null);
 
+    //根据需要获取的图片的相关信息，创建一个Action
     Action action =
         new TargetAction(picasso, target, request, skipMemoryCache, errorResId, errorDrawable,
             requestKey, tag);
+    //将action添加到队列并提交。
     picasso.enqueueAndSubmit(action);
   }
 
@@ -620,6 +635,7 @@ public class RequestCreator {
   }
 
   /** Create the request optionally passing it through the request transformer. */
+  /** 创建一个request，并将其传递给transformer。 */
   private Request createRequest(long started) {
     int id = getRequestId();
 

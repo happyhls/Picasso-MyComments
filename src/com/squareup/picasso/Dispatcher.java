@@ -173,8 +173,11 @@ class Dispatcher {
     performSubmit(action, true);
   }
 
+  //提交要执行的action
   void performSubmit(Action action, boolean dismissFailed) {
+    //如果pausedTags包含了对应的action
     if (pausedTags.contains(action.getTag())) {
+      //那么将action放入到pausedActions当中(我擦，还有暂停功能)
       pausedActions.put(action.getTarget(), action);
       if (action.getPicasso().loggingEnabled) {
         log(OWNER_DISPATCHER, VERB_PAUSED, action.request.logId(),
@@ -183,12 +186,14 @@ class Dispatcher {
       return;
     }
 
+    // 看看该任务是否已经添加过。
     BitmapHunter hunter = hunterMap.get(action.getKey());
     if (hunter != null) {
       hunter.attach(action);
       return;
     }
 
+    //服务终止。。。
     if (service.isShutdown()) {
       if (action.getPicasso().loggingEnabled) {
         log(OWNER_DISPATCHER, VERB_IGNORED, action.request.logId(), "because shut down");
@@ -196,9 +201,13 @@ class Dispatcher {
       return;
     }
 
+    //根据任务的uri，找到真正可以执行该任务的对应的Handler，重新封装
     hunter = forRequest(action.getPicasso(), this, cache, stats, action);
+    //提交任务，并且获取一个future
     hunter.future = service.submit(hunter);
+    //将提交过的任务放入hunterMap当中
     hunterMap.put(action.getKey(), hunter);
+    //忽略失败标志。
     if (dismissFailed) {
       failedActions.remove(action.getTarget());
     }
@@ -461,9 +470,11 @@ class Dispatcher {
     }
   }
 
+  //Dispacher的处理函数
   private static class DispatcherHandler extends Handler {
     private final Dispatcher dispatcher;
 
+    //在这里，还看不出来这一部分是工作在哪个线程之上的。
     public DispatcherHandler(Looper looper, Dispatcher dispatcher) {
       super(looper);
       this.dispatcher = dispatcher;
@@ -472,6 +483,7 @@ class Dispatcher {
     @Override public void handleMessage(final Message msg) {
       switch (msg.what) {
         case REQUEST_SUBMIT: {
+          //Action提交之后，会调用dispatcher.performSubmit(action)函数。
           Action action = (Action) msg.obj;
           dispatcher.performSubmit(action);
           break;

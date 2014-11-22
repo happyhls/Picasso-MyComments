@@ -22,12 +22,16 @@ import static com.squareup.picasso.Picasso.LoadedFrom;
 
 /**
  * Represents an arbitrary listener for image loading.
+ * 一个图片加载的接口
  * <p>
  * Objects implementing this class <strong>must</strong> have a working implementation of
  * {@link Object#equals(Object)} and {@link Object#hashCode()} for proper storage internally.
  * Instances of this interface will also be compared to determine if view recycling is occurring.
  * It is recommended that you add this interface directly on to a custom view type when using in an
  * adapter to ensure correct recycling behavior.
+ * 
+ * 如果实现这个类，那么必须要实现equeals(Object)和hashCode()方法。
+ * 该接口也会用来判断view是否正在被recycling。推荐的做法是，当我们使用adapter的时候，要给holder实现此接口。
  */
 public interface Target {
   /**

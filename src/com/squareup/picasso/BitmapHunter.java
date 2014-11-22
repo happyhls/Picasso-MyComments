@@ -43,9 +43,11 @@ class BitmapHunter implements Runnable {
    * Global lock for bitmap decoding to ensure that we are only are decoding one at a time. Since
    * this will only ever happen in background threads we help avoid excessive memory thrashing as
    * well as potential OOMs. Shamelessly stolen from Volley.
+   * 一个全局锁，用来保证在同一个时刻只有一张图片在解码。为了减少内存消耗，哈哈，原来这个地方是直接从Volley那里学来的，我说怎么一个样子。
    */
   private static final Object DECODE_LOCK = new Object();
 
+  //对ThreadLocal的理解还不是很透彻
   private static final ThreadLocal<StringBuilder> NAME_BUILDER = new ThreadLocal<StringBuilder>() {
     @Override protected StringBuilder initialValue() {
       return new StringBuilder(Utils.THREAD_PREFIX);
@@ -102,6 +104,7 @@ class BitmapHunter implements Runnable {
 
   @Override public void run() {
     try {
+      //更新线程名称
       updateThreadName(data);
 
       if (picasso.loggingEnabled) {
@@ -111,8 +114,10 @@ class BitmapHunter implements Runnable {
       result = hunt();
 
       if (result == null) {
+        //如果没有获取到结果，那么就分发失败消息
         dispatcher.dispatchFailed(this);
       } else {
+        //派发成功消息
         dispatcher.dispatchComplete(this);
       }
     } catch (Downloader.ResponseException e) {
@@ -134,9 +139,11 @@ class BitmapHunter implements Runnable {
     }
   }
 
+  //解码部分
   Bitmap hunt() throws IOException {
     Bitmap bitmap = null;
 
+    //如果不跳过MemoryCache，那么则尝试从MemoryCache获取
     if (!skipMemoryCache) {
       bitmap = cache.get(key);
       if (bitmap != null) {
@@ -153,7 +160,9 @@ class BitmapHunter implements Runnable {
     RequestHandler.Result result = requestHandler.load(data);
     if (result != null) {
       bitmap = result.getBitmap();
+      //从枚举类获取信息，是从Network，Disk，还是Memory中获取到的数据
       loadedFrom = result.getLoadedFrom();
+      //是否需要旋转
       exifRotation = result.getExifOrientation();
     }
 
@@ -161,7 +170,9 @@ class BitmapHunter implements Runnable {
       if (picasso.loggingEnabled) {
         log(OWNER_HUNTER, VERB_DECODED, data.logId());
       }
+      //派发数据---->奇怪，是什么先派发Decoded完成，再派发Transformed，如果需要Transformed，那么Decoded是否是重复工作了呢？
       stats.dispatchBitmapDecoded(bitmap);
+      //此处则是需要旋转图片，或者是其他的自定义的图片滤镜
       if (data.needsTransformation() || exifRotation != 0) {
         synchronized (DECODE_LOCK) {
           if (data.needsMatrixTransform() || exifRotation != 0) {
@@ -186,6 +197,7 @@ class BitmapHunter implements Runnable {
     return bitmap;
   }
 
+  // 说明该任务请求了多次，合并请求。
   void attach(Action action) {
     boolean loggingEnabled = picasso.loggingEnabled;
     Request request = action.request;
@@ -212,6 +224,7 @@ class BitmapHunter implements Runnable {
       log(OWNER_HUNTER, VERB_JOINED, request.logId(), getLogIdsForHunter(this, "to "));
     }
 
+    //更新优先级
     Priority actionPriority = action.getPriority();
     if (actionPriority.ordinal() > priority.ordinal()) {
       priority = actionPriority;
@@ -340,6 +353,7 @@ class BitmapHunter implements Runnable {
     Thread.currentThread().setName(builder.toString());
   }
 
+  //此处应该是真正的将任务分发到不同的工作线程当中
   static BitmapHunter forRequest(Picasso picasso, Dispatcher dispatcher, Cache cache, Stats stats,
       Action action) {
     Request request = action.getRequest();
@@ -353,7 +367,7 @@ class BitmapHunter implements Runnable {
         return new BitmapHunter(picasso, dispatcher, cache, stats, action, requestHandler);
       }
     }
-
+    //此处是没有找到可以处理该请求的reqeustHandler
     return new BitmapHunter(picasso, dispatcher, cache, stats, action, ERRORING_HANDLER);
   }
 
