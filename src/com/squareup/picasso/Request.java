@@ -191,19 +191,27 @@ public final class Request {
   /** Builder for creating {@link Request} instances. */
   /** 构造类，用于构造Request的实例 */
   public static final class Builder {
+    //uri,resourceId,stableKey
     private Uri uri;
     private int resourceId;
     private String stableKey;
+    //宽度，高度
     private int targetWidth;
     private int targetHeight;
+    //是否居中裁剪
     private boolean centerCrop;
+    //是否居中包含
     private boolean centerInside;
+    //旋转的设置参数
     private float rotationDegrees;
     private float rotationPivotX;
     private float rotationPivotY;
     private boolean hasRotationPivot;
+    //转换，用来将图片从网络获取后进行下一步处理。
     private List<Transformation> transformations;
+    //Bitmap解码的config
     private Bitmap.Config config;
+    //优先级:分为Low，High，Normal
     private Priority priority;
 
     /** Start building a request using the specified {@link Uri}. */
@@ -221,6 +229,7 @@ public final class Request {
       this.resourceId = resourceId;
     }
 
+    //根据已有的request构造一个新的Request.Builder。注意到的是，其中的transformations需要从新构建一个List，否则修改之前的会影响现在的。
     private Builder(Request request) {
       uri = request.uri;
       resourceId = request.resourceId;
@@ -283,6 +292,7 @@ public final class Request {
     /**
      * Set the stable key to be used instead of the URI or resource ID when caching.
      * Two requests with the same value are considered to be for the same resource.
+     * 当cache使用Reqeust的时候，会使用stableKey而非URI或者resource Id作为其唯一的标志
      */
     public Builder stableKey(String stableKey) {
       this.stableKey = stableKey;
@@ -398,6 +408,7 @@ public final class Request {
 
     /**
      * Add a custom transformation to be applied to the image.
+     * 添加一个后处理器，当生成图片之后会调用该处理器对图片进行处理，注意默认情况下，只允许设置2个处理器。
      * <p>
      * Custom transformations will always be run after the built-in transformations.
      */
@@ -416,6 +427,7 @@ public final class Request {
     }
 
     /** Create the immutable {@link Request} object. */
+    /** 构建一个不可修改的{@link Request}对象 */
     public Request build() {
       if (centerInside && centerCrop) {
         throw new IllegalStateException("Center crop and center inside can not be used together.");

@@ -77,7 +77,14 @@ public class RequestCreator {
     return id.get();
   }
 
+  /**
+   * ReqeustCreator中保存了picasso的相关信息，并且将数据信息(即和图片相关，但和处理逻辑不相关的信息，比如地址，大小，是否要旋转缩放等等)都保存在了Reqeust.Builder当中
+   * 同时，该类还保存了一些用来数据采集流程的相关的信息：
+   * 比如：是否要跳过内存的cache，是否要设置默认显示的图片，出错的图片，等等。
+   */
   private final Picasso picasso;
+  
+  //注意，其实在Reqeust.Builder是保存了所有的与图片显示相关的信息，包括图片的URL或者ResourceId，宽度，长度，是否旋转裁剪等等。
   private final Request.Builder data;
 
   private boolean skipMemoryCache;
@@ -106,10 +113,13 @@ public class RequestCreator {
 
   /**
    * Explicitly opt-out to having a placeholder set when calling {@code into}.
+   * 为调用{@code into}的时候明确指出去掉占位符。
    * <p>
    * By default, Picasso will either set a supplied placeholder or clear the target
    * {@link ImageView} in order to ensure behavior in situations where views are recycled. This
    * method will prevent that behavior and retain any already set image.
+   * 默认情况下，Picasso会设置一个准备好的占位符，或者是清空target{@link ImageView}来确保可能出现的view需要被回收的情况。
+   * 该方法会明确禁止这个现象，并且户保留那些已经设置过的图片。
    */
   public RequestCreator noPlaceholder() {
     if (placeholderResId != 0) {
@@ -126,6 +136,8 @@ public class RequestCreator {
    * A placeholder drawable to be used while the image is being loaded. If the requested image is
    * not immediately available in the memory cache then this resource will be set on the target
    * {@link ImageView}.
+   * 占位符图片用来在image加载的时候使用。如果说请求的图片无法从memory cache中直接获取的话，那么就会设置target{@link ImageView}显示
+   * placeholderResId指定的图片。
    */
   public RequestCreator placeholder(int placeholderResId) {
     if (!setPlaceholder) {
@@ -145,9 +157,12 @@ public class RequestCreator {
    * A placeholder drawable to be used while the image is being loaded. If the requested image is
    * not immediately available in the memory cache then this resource will be set on the target
    * {@link ImageView}.
+   * 占位符图片用来在image加载的时候使用。如果说请求的图片无法从memory cache中直接获取的话，那么就会设置target{@link ImageView}显示
+   * placeholderDrawable的图片。
    * <p>
    * If you are not using a placeholder image but want to clear an existing image (such as when
    * used in an {@link android.widget.Adapter adapter}), pass in {@code null}.
+   * 如果说我们并不使用placeholder的图像，但是想清空已经存在的图片，比如在使用{@link android.widget.Adapter adapter}的时候(因为这个时候，同一个控件是不断被复用的)，传递给他null就可以了。
    */
   public RequestCreator placeholder(Drawable placeholderDrawable) {
     if (!setPlaceholder) {
@@ -188,16 +203,20 @@ public class RequestCreator {
    * Assign a tag to this request. Tags are an easy way to logically associate
    * related requests that can be managed together e.g. paused, resumed,
    * or canceled.
+   * 设置一个与reqeust相关联的tag。Tags是一种比较简单的实现的与reqeust相关联的实现方式，可以用来实现paused，resumed，或者取消。
    * <p>
    * You can either use simple {@link String} tags or objects that naturally
    * define the scope of your requests within your app such as a
    * {@link android.content.Context}, an {@link android.app.Activity}, or a
    * {@link android.app.Fragment}.
-   *
+   * 我们可以使用{@link String}的tags或者objects(同时定义了请求在app内的scope范围。比如{@link android.content.Context}，
+   * {@link android.app.Activity}或者{@link android.app.Fragment}）
+   * 
    * <strong>WARNING:</strong>: Picasso will keep a reference to the tag for
    * as long as this tag is paused and/or has active requests. Look out for
    * potential leaks.
-   *
+   * 注意，只要reqeusts处于paused或者active的状态，那么Picasso会保持对tag的引用，这可能会导致一些内存上的泄漏。
+   * 
    * @see Picasso#cancelTag(Object)
    * @see Picasso#pauseTag(Object)
    * @see Picasso#resumeTag(Object)
@@ -216,8 +235,11 @@ public class RequestCreator {
   /**
    * Attempt to resize the image to fit exactly into the target {@link ImageView}'s bounds. This
    * will result in delayed execution of the request until the {@link ImageView} has been laid out.
+   * 尝试修改image的尺寸使其尽可能准确的适用{@link ImageView}的边界。这可能导致对应的reqeust会一直拖后到{@link ImageView}
+   * 已经展出界面之后才会开始运行。
    * <p>
    * <em>Note:</em> This method works only when your target is an {@link ImageView}.
+   * 注意：该方法仅有在我们的target是{@link ImageView}的时候适用。
    */
   public RequestCreator fit() {
     deferred = true;
@@ -225,12 +247,14 @@ public class RequestCreator {
   }
 
   /** Internal use only. Used by {@link DeferredRequestCreator}. */
+  /** 仅仅内部使用，供 {@link DeferredRequestCreator}. */
   RequestCreator unfit() {
     deferred = false;
     return this;
   }
 
   /** Resize the image to the specified dimension size. */
+  /** 将image的大小修改为指定的尺寸dimension */
   public RequestCreator resizeDimen(int targetWidthResId, int targetHeightResId) {
     Resources resources = picasso.context.getResources();
     int targetWidth = resources.getDimensionPixelSize(targetWidthResId);
@@ -239,6 +263,7 @@ public class RequestCreator {
   }
 
   /** Resize the image to the specified size in pixels. */
+  /** 将image的大小修改为指定的尺寸pixels */
   public RequestCreator resize(int targetWidth, int targetHeight) {
     data.resize(targetWidth, targetHeight);
     return this;
@@ -297,10 +322,12 @@ public class RequestCreator {
 
   /**
    * Set the priority of this request.
+   * 设置请求的优先级。
    * <p>
    * This will affect the order in which the requests execute but does not guarantee it.
    * By default, all requests have {@link Priority#NORMAL} priority, except for
    * {@link #fetch()} requests, which have {@link Priority#LOW} priority by default.
+   * 这会导致reqeusts的执行顺序的改变，但并不会保证。默认情况下，所有的reqeusts有
    */
   public RequestCreator priority(Priority priority) {
     data.priority(priority);
@@ -309,6 +336,7 @@ public class RequestCreator {
 
   /**
    * Add a custom transformation to be applied to the image.
+   * 添加一个图片上使用的transformation
    * <p>
    * Custom transformations will always be run after the built-in transformations.
    */
@@ -322,6 +350,8 @@ public class RequestCreator {
    * Indicate that this action should not use the memory cache for attempting to load or save the
    * image. This can be useful when you know an image will only ever be used once (e.g., loading
    * an image from the filesystem and uploading to a remote server).
+   * 标志着该action不要使用memory cache来尝试加载或者保存图片。这在image仅仅会使用到一次的时候是很有用的。(e.g
+   * 从文件系统中加载图片并且上传到远程的server的时候)。
    */
   public RequestCreator skipMemoryCache() {
     skipMemoryCache = true;
@@ -329,6 +359,7 @@ public class RequestCreator {
   }
 
   /** Disable brief fade in of images loaded from the disk cache or network. */
+  /** 关闭该功能，具体什么表现，还不是特别明白 */
   public RequestCreator noFade() {
     noFade = true;
     return this;
@@ -336,9 +367,11 @@ public class RequestCreator {
 
   /**
    * Synchronously fulfill this request. Must not be called from the main thread.
+   * 同步填充request，必须从主线程上调用。
    * <p>
    * <em>Note</em>: The result of this operation is not cached in memory because the underlying
    * {@link Cache} implementation is not guaranteed to be thread-safe.
+   * 该操作的结果并不会在内存中cache，因为底层的{@link Cache}实现并不保证是线程安全的。
    */
   public Bitmap get() throws IOException {
     long started = System.nanoTime();
@@ -351,10 +384,13 @@ public class RequestCreator {
       return null;
     }
 
+    //创建Request
     Request finalData = createRequest(started);
+    //创建CacheKey，这些属性都会用到
     String key = createKey(finalData, new StringBuilder());
-
+    //获取对应的action
     Action action = new GetAction(picasso, finalData, skipMemoryCache, key, tag);
+    //首先创建一个BitmapHunter，并执行hunt()方法XXXXX这个地方不明白，应该是异步的，但没看明白。
     return forRequest(picasso, picasso.dispatcher, picasso.cache, picasso.stats, action).hunt();
   }
 
