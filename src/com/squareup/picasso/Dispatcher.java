@@ -474,7 +474,8 @@ class Dispatcher {
   private static class DispatcherHandler extends Handler {
     private final Dispatcher dispatcher;
 
-    //在这里，还看不出来这一部分是工作在哪个线程之上的。
+    // 根据Dispatcher中调用的构造函数DispatcherHandler(dispatcherThread.getLooper(), this)可以看出，
+    // 该Handler其实是工作在DispatcherThread之上的。
     public DispatcherHandler(Looper looper, Dispatcher dispatcher) {
       super(looper);
       this.dispatcher = dispatcher;
