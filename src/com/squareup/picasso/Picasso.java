@@ -149,27 +149,25 @@ public class Picasso {
     }
   };
 
-    //单例模式
   static Picasso singleton = null;
 
-  private final Listener listener;
-  private final RequestTransformer requestTransformer;
-  private final CleanupThread cleanupThread;
-  private final List<RequestHandler> requestHandlers;
+  private final Listener listener; //前面提到过，Listener是出错的时候的问题回调，其中有onImageLoadFailed()方法。
+  private final RequestTransformer requestTransformer; //这个则是前面定义的，用来预先处理请求使用。
+  private final CleanupThread cleanupThread;  //这个是一个清理线程，具体做的工作后面慢慢分析。
+  private final List<RequestHandler> requestHandlers;   //请求处理的ReqeustHandler集合，由于Picasso可以处理各种各样的请求，比如Uri，File，resourceId等等，因此各自需要不同的Handler去处理。
 
   final Context context;
-  final Dispatcher dispatcher;
-  final Cache cache;
-  final Stats stats;
-  //一个Map用来保存了正在执行的Target
-  final Map<Object, Action> targetToAction;
-  final Map<ImageView, DeferredRequestCreator> targetToDeferredRequestCreator;
-  final ReferenceQueue<Object> referenceQueue;
+  final Dispatcher dispatcher;   //任务分发的上下文，前面的文章有提到过，后面慢慢分析。
+  final Cache cache;   //Cache
+  final Stats stats;   //Stats
+  final Map<Object, Action> targetToAction;  //这里保存的是Target对应的Action，Picasso中既可以处理ImageView，也可以根据我们的需要包装成Target，当结果返回时，调用Target对应的方法即可。
+  final Map<ImageView, DeferredRequestCreator> targetToDeferredRequestCreator;  //给定的ImageView对应的延时执行的请求 DeferredRequestCreator。
+  final ReferenceQueue<Object> referenceQueue;  //ReferenceQueue，这个还不清楚是做什么的。
 
-  boolean indicatorsEnabled;
-  volatile boolean loggingEnabled;
+  boolean indicatorsEnabled;   //还不清楚做什么的。
+  volatile boolean loggingEnabled;  //是否允许Log
 
-  boolean shutdown;
+  boolean shutdown;  //停止Picasso服务标志。
 
   Picasso(Context context, Dispatcher dispatcher, Cache cache, Listener listener,
       RequestTransformer requestTransformer, List<RequestHandler> extraRequestHandlers,
@@ -563,7 +561,7 @@ public class Picasso {
       //实际上是通过dispatcher绑定的handler发送到相应的线程上去处理。
       dispatcher.dispatchCancel(action);
     }
-    //如果target是一个ImageView的话，那么还会需要一些操作，暂时不太懂。
+    //如果target是一个ImageView的话，取消那些之前添加的，需要延时处理的请求
     if (target instanceof ImageView) {
       ImageView targetImageView = (ImageView) target;
       DeferredRequestCreator deferredRequestCreator =
