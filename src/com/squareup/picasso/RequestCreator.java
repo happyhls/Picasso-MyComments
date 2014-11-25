@@ -55,7 +55,7 @@ public class RequestCreator {
   //如果是在主线程上调用：则直接将返回nextId，并自增-->貌似不是线程安全的
   //如果是在其他的线程上调用，那么通过handler发送给主线程，在主线程中同样从这里取一个nextId,然后自增，然后再设置给AtomicInteger。
   //使用了CountDownLatch来在其他线程中等待主线程设置Id。
-  //有个问题：这个线程是不是线程安全的？
+  //有个问题：这个线程是不是线程安全的？这个应该是线程安全的，因为这个方法在返回nextId之前，保证调用是来自主线程。换句话说，只有在主线程调用getRequestId()的时候，才会去生成并返回reqeustId，既然都在一个线程上进行的，那肯定是线程安全的。
   private static int getRequestId() {
     if (isMain()) {
       return nextId++;
