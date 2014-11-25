@@ -386,17 +386,18 @@ public class RequestCreator {
 
     //创建Request
     Request finalData = createRequest(started);
-    //创建CacheKey，这些属性都会用到
+    //根据Reqeust，创建CacheKey
     String key = createKey(finalData, new StringBuilder());
-    //获取对应的action
+    //获取对应的Action
     Action action = new GetAction(picasso, finalData, skipMemoryCache, key, tag);
-    //首先创建一个BitmapHunter，并执行hunt()方法XXXXX这个地方不明白，应该是异步的，但没看明白。
+    //首先创建一个BitmapHunter，并调用其中的hunt()方法。
     return forRequest(picasso, picasso.dispatcher, picasso.cache, picasso.stats, action).hunt();
   }
 
   /**
    * Asynchronously fulfills the request without a {@link ImageView} or {@link Target}. This is
    * useful when you want to warm up the cache with an image.
+   * 跟上面的get()方法相对应的，这是一个异步的处理方法的请求。该方法是线程安全的，可以从任何方法进行调用。
    * <p>
    * <em>Note:</em> It is safe to invoke this method from any thread.
    */
