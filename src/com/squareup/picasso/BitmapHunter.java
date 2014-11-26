@@ -280,6 +280,10 @@ class BitmapHunter implements Runnable {
     return newPriority;
   }
 
+  // 该代码写的比较给力，判断BitmapHunter是否可以cancel，而且尝试取消
+  // 如果action通过detach取消了，但还可能由其他的actions，因此需要继续判断
+  // 如果其他的actions没有了，那么还要看是否还保存着future，如果还保存着future，那么就调用future的.cancel()方法
+  // 特别细致的使用了逻辑运算中的短路
   boolean cancel() {
     return action == null
         && (actions == null || actions.isEmpty())
