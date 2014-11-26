@@ -201,7 +201,7 @@ class Dispatcher {
       return;
     }
 
-    //根据任务的uri，找到真正可以执行该任务的对应的Handler，重新封装
+    //根据任务的uri，找到真正可以执行该任务的对应的Handler，重新封装为一个BitmapHunter
     hunter = forRequest(action.getPicasso(), this, cache, stats, action);
     //提交任务，并且获取一个future
     hunter.future = service.submit(hunter);

@@ -47,7 +47,7 @@ class BitmapHunter implements Runnable {
    */
   private static final Object DECODE_LOCK = new Object();
 
-  //对ThreadLocal的理解还不是很透彻
+  //对每一个线程都返回单独的一份StringBuilder，这样每一个获取NAME_BUILDER的线程都可以对其获取的StringBuilder进行修改，而无序担心竞争的问题。
   private static final ThreadLocal<StringBuilder> NAME_BUILDER = new ThreadLocal<StringBuilder>() {
     @Override protected StringBuilder initialValue() {
       return new StringBuilder(Utils.THREAD_PREFIX);
@@ -170,7 +170,8 @@ class BitmapHunter implements Runnable {
       if (picasso.loggingEnabled) {
         log(OWNER_HUNTER, VERB_DECODED, data.logId());
       }
-      //派发数据---->奇怪，是什么先派发Decoded完成，再派发Transformed，如果需要Transformed，那么Decoded是否是重复工作了呢？
+      //(错误理解！)派发数据---->奇怪，是什么先派发Decoded完成，再派发Transformed，如果需要Transformed，那么Decoded是否是重复工作了呢？
+      //实际上，并不是派发数据，而是通知统计线程，完成该图片的下载和解码。
       stats.dispatchBitmapDecoded(bitmap);
       //此处则是需要旋转图片，或者是其他的自定义的图片滤镜
       if (data.needsTransformation() || exifRotation != 0) {
@@ -353,7 +354,7 @@ class BitmapHunter implements Runnable {
     Thread.currentThread().setName(builder.toString());
   }
 
-  //此处应该是真正的将任务分发到不同的工作线程当中
+  //构建BitmapHunter，会查找Request对应的ReqeustHandler，并将其设置在BitmapHunter当中
   static BitmapHunter forRequest(Picasso picasso, Dispatcher dispatcher, Cache cache, Stats stats,
       Action action) {
     Request request = action.getRequest();
